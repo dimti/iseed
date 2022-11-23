@@ -295,6 +295,24 @@ class Iseed
     }
 
     /**
+     * PHP var_export() with short array syntax (square brackets) indented 2 spaces.
+     *
+     * NOTE: The only issue is when a string value has `=>\n[`, it will get converted to `=> [`
+     * @link https://www.php.net/manual/en/function.var-export.php
+     */
+    function varexport($expression, $return=FALSE) {
+        $export = var_export($expression, TRUE);
+        $patterns = [
+            "/array \(/" => '[',
+            "/^([ ]*)\)(,?)$/m" => '$1]$2',
+            "/=>[ ]?\n[ ]+\[/" => '=> [',
+            "/([ ]*)(\'[^\']+\') => ([\[\'])/" => '$1$2 => $3',
+        ];
+        $export = preg_replace(array_keys($patterns), array_values($patterns), $export);
+        if ((bool)$return) return $export; else echo $export;
+    }
+
+    /**
      * Prettify a var_export of an array
      * @param  array  $array
      * @return string
@@ -302,8 +320,8 @@ class Iseed
     protected function prettifyArray($array, $indexed = true)
     {
         $content = ($indexed)
-            ? var_export($array, true)
-            : preg_replace("/[0-9]+ \=\>/i", '', var_export($array, true));
+            ? $this->varexport($array, true)
+            : preg_replace("/[0-9]+ \=\>/i", '', $this->varexport($array, true));
 
         $lines = explode("\n", $content);
 
@@ -313,7 +331,7 @@ class Iseed
             $lines[$i] = ltrim($lines[$i]);
 
             //Check for closing bracket
-            if (strpos($lines[$i], ')') !== false) {
+            if (strpos($lines[$i], ']') !== false) {
                 $tabCount--;
             }
 
@@ -336,7 +354,7 @@ class Iseed
             }
 
             //check for openning bracket
-            if (strpos($lines[$i], '(') !== false) {
+            if (strpos($lines[$i], '[') !== false) {
                 $tabCount++;
             }
         }
